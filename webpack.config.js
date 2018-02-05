@@ -2,7 +2,7 @@
 * @Author: v_yinggzhou
 * @Date:   2018-02-02 10:42:24
 * @Last Modified by:   v_yinggzhou
-* @Last Modified time: 2018-02-05 15:50:52
+* @Last Modified time: 2018-02-05 19:29:04
 */
 const path = require('path')
 const HTMLPlugin = require('html-webpack-plugin')
@@ -75,6 +75,10 @@ if(isDev){// 开发配置
 		new webpack.NoEmitOnErrorsPlugin()
 	)
 }else{// 正式环境配置
+	config.entry = {
+		app: path.join(__dirname, 'src/index.js'),
+		vendor: ['vue']
+	}
 	// 正式环境要使用chunkhash
 	config.output.filename = '[name].[chunkhash:8].js'
 	config.module.rules.push({
@@ -94,7 +98,13 @@ if(isDev){// 开发配置
 		})
 	})
 	config.plugins.push(
-		new ExtractPlugin('styles.[contentHash:8].css')
+		new ExtractPlugin('styles.[contentHash:8].css'),
+		new webpack.optimize.CommonsChunkPlugin({
+			name: 'vendor'
+		}),
+		new webpack.optimize.CommonsChunkPlugin({
+			name: 'runtime'
+		})
 	)
 }
 
