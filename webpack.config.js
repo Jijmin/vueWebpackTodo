@@ -2,11 +2,12 @@
 * @Author: v_yinggzhou
 * @Date:   2018-02-02 10:42:24
 * @Last Modified by:   v_yinggzhou
-* @Last Modified time: 2018-02-05 10:56:23
+* @Last Modified time: 2018-02-05 15:50:52
 */
 const path = require('path')
 const HTMLPlugin = require('html-webpack-plugin')
 const webpack = require('webpack')
+const ExtractPlugin = require('extract-text-webpack-plugin')
 // 判断是否是开发环境
 const isDev = process.env.NODE_ENV === 'development'
 
@@ -14,7 +15,7 @@ const config = {
 	target: 'web',
 	entry: path.join(__dirname, 'src/index.js'),// 输入
 	output: {// 输出
-		filename: 'bundle.js',// 文件名
+		filename: 'bundle.[hash:8].js',// 文件名
 		path: path.join(__dirname, 'dist')// 输出路径
 	},
 	module: {
@@ -24,25 +25,6 @@ const config = {
 		}, {// jsx语法的支持
 			test: /\.jsx$/,
 			loader: 'babel-loader'
-		}, {// css文件的处理
-			test: /\.css$/,
-			use: [
-				'style-loader',// 将读出来的css写到style标签中
-				'css-loader',//只是从css文件中将样式读取出来
-			]
-		}, {// css预处理器
-			test: /\.styl$/,
-			use: [
-				'style-loader',
-				'css-loader',
-				{
-					loader: 'postcss-loader',
-					options: {
-						sourceMap: true,// postcss-loader可以复用前面的sourcemap
-					}
-				},
-				'stylus-loader'// 针对stylus文件做处理
-			]
 		}, {// 图片处理
 			test: /\.(gif|jpg|jpeg|png|svg)$/,
 			use: [{
@@ -64,8 +46,21 @@ const config = {
 	]
 }
 
-// 开发配置
-if(isDev){
+if(isDev){// 开发配置
+	config.module.rules.push({// css预处理器
+		test: /\.styl$/,
+		use: [
+			'style-loader',
+			'css-loader',
+			{
+				loader: 'postcss-loader',
+				options: {
+					sourceMap: true,// postcss-loader可以复用前面的sourcemap
+				}
+			},
+			'stylus-loader'// 针对stylus文件做处理
+		]
+	})
 	config.devtool = '#cheap-module-eval-source-map'// 便于调试
 	config.devServer = {
 		port: 8000, // 监听的端口
@@ -78,6 +73,28 @@ if(isDev){
 	config.plugins.push(
 		new webpack.HotModuleReplacementPlugin(),
 		new webpack.NoEmitOnErrorsPlugin()
+	)
+}else{// 正式环境配置
+	// 正式环境要使用chunkhash
+	config.output.filename = '[name].[chunkhash:8].js'
+	config.module.rules.push({
+		test: /\.styl$/,
+		use: ExtractPlugin.extract({
+			fallback: 'style-loader',
+			use: [
+				'css-loader',
+				{
+					loader: 'postcss-loader',
+					options: {
+						sourceMap: true,// postcss-loader可以复用前面的sourcemap
+					}
+				},
+				'stylus-loader'// 针对stylus文件做处理
+			]
+		})
+	})
+	config.plugins.push(
+		new ExtractPlugin('styles.[contentHash:8].css')
 	)
 }
 
