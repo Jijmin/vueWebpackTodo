@@ -2,11 +2,16 @@
 * @Author: v_yinggzhou
 * @Date:   2018-02-02 10:42:24
 * @Last Modified by:   v_yinggzhou
-* @Last Modified time: 2018-02-02 14:41:55
+* @Last Modified time: 2018-02-05 10:56:23
 */
 const path = require('path')
+const HTMLPlugin = require('html-webpack-plugin')
+const webpack = require('webpack')
+// 判断是否是开发环境
+const isDev = process.env.NODE_ENV === 'development'
 
-module.exports = {
+const config = {
+	target: 'web',
 	entry: path.join(__dirname, 'src/index.js'),// 输入
 	output: {// 输出
 		filename: 'bundle.js',// 文件名
@@ -16,6 +21,9 @@ module.exports = {
 		rules: [{// Vue文件的处理
 			test: /\.vue$/,// 匹配规则
 			loader: 'vue-loader'// 处理.vue的文件
+		}, {// jsx语法的支持
+			test: /\.jsx$/,
+			loader: 'babel-loader'
 		}, {// css文件的处理
 			test: /\.css$/,
 			use: [
@@ -27,6 +35,12 @@ module.exports = {
 			use: [
 				'style-loader',
 				'css-loader',
+				{
+					loader: 'postcss-loader',
+					options: {
+						sourceMap: true,// postcss-loader可以复用前面的sourcemap
+					}
+				},
 				'stylus-loader'// 针对stylus文件做处理
 			]
 		}, {// 图片处理
@@ -39,5 +53,32 @@ module.exports = {
 				}
 			}]
 		}]
-	}
+	},
+	plugins: [
+		new webpack.DefinePlugin({
+			'process.env': {
+				NODE_ENV: isDev ? '"development"' : '"production"'
+			}
+		}),// 将NODE_ENV配置到全局变量中
+		new HTMLPlugin()// 使用HTMLPlugin插件生成一个html文件
+	]
 }
+
+// 开发配置
+if(isDev){
+	config.devtool = '#cheap-module-eval-source-map'// 便于调试
+	config.devServer = {
+		port: 8000, // 监听的端口
+		host: '0.0.0.0', // 127.0.0.1和本地内网IP都可以访问
+		overlay: {// 在webpack进行编译的过程中，如果有任何的错误，都显示到网页上
+			errors: true,
+		},
+		hot: true// 热加载
+	}
+	config.plugins.push(
+		new webpack.HotModuleReplacementPlugin(),
+		new webpack.NoEmitOnErrorsPlugin()
+	)
+}
+
+module.exports = config
